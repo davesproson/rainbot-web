@@ -11,7 +11,7 @@ from .models import RainBot, RainDrop
 # Create your views here.
 class HomeView(View):
     def get(self, request):
-        return HttpResponse('hello')
+        return render(request, 'web/index.html')
 
 
 @method_decorator(csrf_exempt, name='dispatch')
