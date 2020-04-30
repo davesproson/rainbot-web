@@ -1,0 +1,5 @@
+name: rainbot-web
+channels:
+  - defaults
+dependencies:
+  - django
