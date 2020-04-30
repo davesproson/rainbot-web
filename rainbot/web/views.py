@@ -57,3 +57,25 @@ class PostDataView(View):
 
         RainDrop(rainbot=rainbot, time=time, data=data).save()
         return HttpResponse(status=202)
+
+    def get(self, request):
+        key = request.GET.get('api_key')
+        bot_pk = request.GET.get('rainbot')
+
+        time = request.GET.get('time')
+        try:
+            time = datetime.datetime.utcfromtimestamp(float(time))
+        except Exception:
+            time = datetime.datetime.utcnow()
+
+        try:
+            data = float(request.GET.get('data'))
+        except Exception:
+            return HttpResponse(status=400)
+
+        rainbot = get_object_or_404(RainBot, pk=bot_pk)
+        if rainbot.access_key != key:
+            return HttpResponse(status=403)
+
+        RainDrop(rainbot=rainbot, time=time, data=data).save()
+        return HttpResponse(status=202)
