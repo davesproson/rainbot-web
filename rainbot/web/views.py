@@ -7,11 +7,17 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import RainBot, RainDrop
+from .utils import raindrop_counts
 
 # Create your views here.
 class HomeView(View):
     def get(self, request):
-        return render(request, 'web/index.html')
+        return render(
+            request, 'web/index.html',
+            {
+                'counts': raindrop_counts(1)
+            }
+        )
 
 
 class GetDataView(View):
