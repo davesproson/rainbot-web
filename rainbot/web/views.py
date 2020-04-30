@@ -20,9 +20,9 @@ class PostDataView(View):
         key = request.POST.get('api_key')
         bot_pk = request.POST.get('rainbot')
 
-        time = float(request.POST.get('time'))
+        time = request.POST.get('time')
         try:
-            time = datetime.datetime.utcfromtimestamp(time)
+            time = datetime.datetime.utcfromtimestamp(float(time))
         except Exception:
             time = datetime.datetime.utcnow()
 
