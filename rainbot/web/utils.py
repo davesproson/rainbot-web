@@ -2,33 +2,38 @@ import datetime
 
 from .models import RainDrop
 
+def day_start(dt):
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
+def week_start(dt):
+    return (dt - datetime.timedelta(days=dt.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+
+def month_start(dt):
+    return dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+def year_start(dt):
+    return dt.replace(month=1, day=1, hour=0, minute=0, second=0,
+                      microsecond=0)
+
 def raindrop_counts(rainbot):
     now = datetime.datetime.utcnow()
 
     today = RainDrop.objects.filter(
-        rainbot__pk=rainbot,
-        time__gte=now.replace(hour=0, minute=0, second=0, microsecond=0)
+        rainbot__pk=rainbot, time__gte=day_start(now)
     ).count()
-
-    week_start = (now - datetime.timedelta(days=now.weekday())).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
 
     this_week = RainDrop.objects.filter(
-        rainbot__pk=rainbot, time__gte=week_start
+        rainbot__pk=rainbot, time__gte=week_start(now)
     ).count()
-
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     this_month = RainDrop.objects.filter(
-        rainbot__pk=rainbot, time__gte=month_start
+        rainbot__pk=rainbot, time__gte=month_start(now)
     ).count()
 
-    year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0,
-                             microsecond=0)
-
     this_year = RainDrop.objects.filter(
-        rainbot__pk=rainbot, time__gte=year_start
+        rainbot__pk=rainbot, time__gte=year_start(now)
     ).count()
 
     all_time = RainDrop.objects.filter(rainbot__pk=rainbot).count()

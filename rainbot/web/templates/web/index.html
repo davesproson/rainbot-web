@@ -3,68 +3,100 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Nothing to see here</title>
+        <title>Rainbot dashboard</title>
         <link rel="stylesheet" href="https://unpkg.com/bulmaswatch/darkly/bulmaswatch.min.css">
         <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.25.0/moment.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.5.0.min.js"></script>
     </head>
     <body>
-        <section>
+        <section class="section">
             <div class="container">
                 <h1 class="title">Rain Bot</h1>
                 <h2 class="subtitle">because sometimes it rains</h2>
+            </div>
+        </section>
+            <div class="container">
+
                 <div class="level">
                     <div class="level-item has-text-centered">
                         <div>
                             <p class="heading">Today</p>
-                            <p class="title">{{counts.today}}</p>
+                            <p id="counts-today" class="title">{{counts.today}}</p>
                             <p class="heading">Raindrops</p>
                         </div>
                     </div>
                     <div class="level-item has-text-centered">
                         <div>
                             <p class="heading">This week</p>
-                            <p class="title">{{counts.this_week}}</p>
+                            <p id="counts-thisweek" class="title">{{counts.this_week}}</p>
                             <p class="heading">Raindrops</p>
                         </div>
                     </div>
                     <div class="level-item has-text-centered">
                         <div>
                             <p class="heading">This month</p>
-                            <p class="title">{{counts.this_month}}</p>
+                            <p id="counts-thismonth" class="title">{{counts.this_month}}</p>
                             <p class="heading">Raindrops</p>
                         </div>
                     </div>
                     <div class="level-item has-text-centered">
                         <div>
                             <p class="heading">This year</p>
-                            <p class="title">{{counts.this_year}}</p>
+                            <p id="counts-thisyear" class="title">{{counts.this_year}}</p>
                             <p class="heading">Raindrops</p>
                         </div>
                     </div>
                     <div class="level-item has-text-centered">
                         <div>
                             <p class="heading">All time</p>
-                            <p class="title">{{counts.all_time}}</p>
+                            <p id="counts-alltime" class="title">{{counts.all_time}}</p>
                             <p class="heading">Raindrops</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
-        <section>
+        <section class="section">
             <div class="container">
                 <div class="tile is-ancestor">
                     <div class="tile is-parent">
                         <div class="tile is-parent">
                             <div class="tile is-child box">
+                                <h6 class="subtitle is-6">Today</h6>
+                                <div class="content">
+                                <canvas id="today-chart" height="150px"></canvas>
+                                </div>
                             </div>
                         </div>
                         <div class="tile is-parent">
                             <div class="tile is-child box">
+                                <h6 class="subtitle is-6">This Week</h6>
+                                <div class="content">
+                                <canvas id="week-chart" height="150px"></canvas>
+                                </div>
                             </div>
                         </div>
                         <div class="tile is-parent">
                             <div class="tile is-child box">
+                                <h6 class="subtitle is-6">This Month</h6>
+                                <div class="content">
+                                <canvas id="month-chart" height="150px"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container">
+                <div class="tile is-ancestor">
+                    <div class="tile is-parent">
+                        <div class="tile is-parent">
+                            <div class="tile is-child box">
+                                <h6 class="subtitle is-6">Live data</h6>
+                                <div class="content">
+                                    <canvas id="live-chart" height="50px"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -73,3 +105,169 @@
         </section>
     </body>
 </html>
+
+<script>
+    var liveLabels;
+    var liveData = [{
+        t: new Date(new Date().getTime() - 3600000),
+        y: 0
+    }]; 
+    var liveChart;
+    function staticChart(context, element) {
+       $.ajax({
+           method: 'get',
+           url: 'staticdata',
+           data: {
+               rainbot: 1,
+               context: context
+           },
+           success: data=>{
+                let c = new Chart(element, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.data,
+                            backgroundColor: 'rgba(255, 255, 255, .5)',
+                            borderColor: '#ffffff',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        animation: false,
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }]
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                });
+            },
+            error: err=>console.log(err)
+       });
+    }
+
+    function initLiveChart() {
+       $.ajax({
+           method: 'get',
+           url: 'data',
+           data: {
+               rainbot: 1,
+               aggregate: true,
+               since: (new Date().getTime() / 1000) - 3600
+           },
+           success: data=>{
+               for(let i=0; i<data.time.length; i++) {
+                   liveData.push({
+                       t: new Date(data.time[i] * 1000),
+                       y: data.rain[i]
+                   });
+               }
+
+                liveChart = new Chart('live-chart', {
+                    type: 'bar',
+                    data: {
+                        datasets: [{
+                            data: liveData,
+                            backgroundColor: 'rgba(255, 255, 255, .5)',
+                            borderColor: '#ffffff',
+                            borderWidth: 1,
+                            barPercentage: 1,
+                        }]
+                    },
+                    options: {
+                        animation: false,
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }],
+                            xAxes: [{
+                                type: 'time'
+                            }]
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                });
+               updateChart();
+            }
+        });
+
+        //updateChart();
+        setInterval(updateChart, 5000);
+    }
+
+    function updateChart() {
+        console.log('Updating');
+        let now = new Date();
+
+        while(liveData.length > 0 && liveData[0].y == 0) {
+            liveData.pop(0);
+        }
+
+        liveData.splice(0, 1, {t: new Date(now - 3600000), y: 0});
+
+        while(liveData.length > 0 && liveData[liveData.length-1] == 0) {
+            liveData.pop(liveData.length-1);
+        }
+
+        let since = (liveData[liveData.length - 1].t.getTime() + 1) / 1000
+
+        $.ajax({
+            method: 'get',
+            url: 'data',
+            data: {
+                rainbot: 1,
+                aggregate: true,
+                since: since
+            },
+            success: data=>{
+                for(let i=0; i<data.time.length; i++) {
+                    liveData.push({
+                        t: new Date(data.time[i] * 1000),
+                        y: data.rain[i]
+                    });
+                }
+                if(liveData[liveData.length-1].t < now) {
+                    liveData.push({t:now, y:0});
+                }
+                liveChart.update();
+            },
+            error: e=>console.log(e)
+        });
+    }
+
+    function updateCounts() {
+        $.ajax({
+            method: 'get',
+            url: 'counts',
+            success: data=>{
+                $("#counts-today").html(data.counts.today);
+                $("#counts-thisweek").html(data.counts.this_week);
+                $("#counts-thismonth").html(data.counts.this_month);
+                $("#counts-thisyear").html(data.counts.this_year);
+                $("#counts-alltime").html(data.counts.all_time);
+            }
+        });
+    }
+
+    $(document).ready(()=>{
+        staticChart('today', 'today-chart');
+        staticChart('week', 'week-chart');
+        staticChart('month', 'month-chart');
+        initLiveChart();
+
+        setInterval(staticChart, 120000, 'today', 'today-chart');
+        setInterval(staticChart, 120000, 'week', 'week-chart');
+        setInterval(staticChart, 120000, 'month', 'month-chart');
+        setInterval(updateCounts, 120000);
+    });
+</script>
