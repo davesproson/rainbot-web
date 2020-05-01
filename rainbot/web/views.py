@@ -149,8 +149,7 @@ class StaticDataView(View):
                 [d.data for d in raindrops],
                 index=[d.time for d in raindrops]
             ))
-        except:
-            raise
+        except Exception:
             data = pd.Series([0] * len(label_map[context]),
                              index=label_map[context])
 
