@@ -39,7 +39,7 @@ class GetDataView(View):
             return data
 
         since = datetime.datetime.utcfromtimestamp(
-            float(request.GET.get('since') or 0)
+            math.floor(float(request.GET.get('since') or 0))
         )
         agg = request.GET.get('aggregate')
 

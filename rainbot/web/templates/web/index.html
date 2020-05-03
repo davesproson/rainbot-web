@@ -157,67 +157,48 @@
     }
 
     function initLiveChart() {
-        lastQuery = new Date().getTime() - 3600000;
-        $.ajax({
-            method: 'get',
-            url: 'data',
+        liveChart = new Chart('live-chart', {
+            type: 'bar',
             data: {
-                rainbot: 1,
-                aggregate: true,
-                since: lastQuery / 1000
+                datasets: [{
+                    data: liveData,
+                    backgroundColor: 'rgba(255, 255, 255, .5)',
+                    borderColor: '#ffffff',
+                    borderWidth: 1,
+                    barPercentage: 1,
+                }]
             },
-            success: data=>{
-                for(let i=0; i<data.time.length; i++) {
-                    liveData.push({
-                        t: new Date(data.time[i] * 1000),
-                        y: data.rain[i]
-                    });
-                }
-
-                liveChart = new Chart('live-chart', {
-                    type: 'bar',
-                    data: {
-                        datasets: [{
-                            data: liveData,
-                            backgroundColor: 'rgba(255, 255, 255, .5)',
-                            borderColor: '#ffffff',
-                            borderWidth: 1,
-                            barPercentage: 1,
-                        }]
-                    },
-                    options: {
-                        animation: false,
-                        scales: {
-                            yAxes: [{
-                                ticks: {
-                                    beginAtZero: true
-                                }
-                            }],
-                            xAxes: [{
-                                type: 'time'
-                            }]
-                        },
-                        legend: {
-                            display: false
+            options: {
+                animation: false,
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
                         }
-                    }
-                });
-               updateChart();
+                    }],
+                    xAxes: [{
+                        type: 'time'
+                    }]
+                },
+                legend: {
+                    display: false
+                }
             }
         });
-
-        setInterval(updateChart, 5000);
+       updateChart(new Date().getTime() - 3600000);
+       setInterval(updateChart, 5000);
     }
 
-    function updateChart() {
-        console.log('Updating');
+    function updateChart(timeFrom) {
         let now = new Date().getTime();
 
-        liveData.splice(0, 1, {t: new Date(now - 3600000), y: 0});
-        liveData.pop();
+        liveData[0] = {t: new Date(now - 3600000), y: 0}
+        if(liveData.length > 1) {
+            liveData.pop();
+        }
 
-        let since = lastQuery;
-
+        let since = timeFrom || lastQuery;
+    
         $.ajax({
             method: 'get',
             url: 'data',
@@ -227,7 +208,10 @@
                 since: since / 1000
             },
             success: data=>{
-                lastQuery = since + 1;
+                console.log('data', data);
+
+                lastQuery = now + 1000;
+
                 if(Math.max(...data.rain) > 0) {
                     pulseIcon();
                 }
