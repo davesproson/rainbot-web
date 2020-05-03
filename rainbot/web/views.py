@@ -16,10 +16,14 @@ import pandas as pd
 # Create your views here.
 class HomeView(View):
     def get(self, request):
+        rainbot = RainBot.objects.get(name__iexact='zippy')
         return render(
             request, 'web/index.html',
             {
-                'counts': raindrop_counts(1)
+                'counts': raindrop_counts(rainbot.pk),
+                'name': rainbot.name,
+                'battery': rainbot.battery,
+                'wifi': rainbot.wifi
             }
         )
 
@@ -61,18 +65,38 @@ class GetDataView(View):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class PostDataView(View):
-    def post(self, request):
-        key = request.POST.get('api_key')
-        bot_pk = request.POST.get('rainbot')
 
-        time = request.POST.get('time')
+    def _rain(self, r, t, d):
+        RainDrop(rainbot=r, time=t, data=d).save()
+
+    def _wifi(self, r, t, d):
+        r.wifi = d
+        r.save()
+
+    def _battery(self, r, t, d):
+        r.battery = d
+        r.save()
+
+    EVENT_MAP = {
+        'wifi': _wifi,
+        'battery': _battery,
+        'rain': _rain
+    }
+
+    def _oper(self, request, datain):
+        key = datain.get('api_key')
+        bot_pk = datain.get('rainbot')
+
+        time = datain.get('time')
+        event = datain.get('event')
+
         try:
             time = datetime.datetime.utcfromtimestamp(float(time))
         except Exception:
             time = datetime.datetime.utcnow()
 
         try:
-            data = float(request.POST.get('data'))
+            data = float(datain.get('data'))
         except Exception:
             return HttpResponse(status=400)
 
@@ -80,30 +104,19 @@ class PostDataView(View):
         if rainbot.access_key != key:
             return HttpResponse(status=403)
 
-        RainDrop(rainbot=rainbot, time=time, data=data).save()
+        try:
+            self.EVENT_MAP[event](self, rainbot, time, data)
+        except Exception:
+            raise
+            return HttpResponse(status=400)
+
         return HttpResponse(status=202)
 
     def get(self, request):
-        key = request.GET.get('api_key')
-        bot_pk = request.GET.get('rainbot')
+        return self._oper(request, request.GET)
 
-        time = request.GET.get('time')
-        try:
-            time = datetime.datetime.utcfromtimestamp(float(time))
-        except Exception:
-            time = datetime.datetime.utcnow()
-
-        try:
-            data = float(request.GET.get('data'))
-        except Exception:
-            return HttpResponse(status=400)
-
-        rainbot = get_object_or_404(RainBot, pk=bot_pk)
-        if rainbot.access_key != key:
-            return HttpResponse(status=403)
-
-        RainDrop(rainbot=rainbot, time=time, data=data).save()
-        return HttpResponse(status=202)
+    def post(self, request):
+        return self._oper(request, request.POST)
 
 
 class StaticDataView(View):
