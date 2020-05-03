@@ -14,7 +14,7 @@
         <section class="section">
             <div class="container">
                 <h1 class="title">
-                    <span class="icon"><i class="fas fa-tint"></i></span>
+                    <span class="icon"><i id="logo" class="fas fa-tint"></i></span>
                     Rain Bot
                 </h1>
                 <h2 class="subtitle">because sometimes it rains</h2>
@@ -68,7 +68,7 @@
                             <div class="tile is-child box">
                                 <h6 class="subtitle is-6">Today</h6>
                                 <div class="content">
-                                <canvas id="today-chart" height="150px"></canvas>
+                                <canvas id="today-chart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -76,7 +76,7 @@
                             <div class="tile is-child box">
                                 <h6 class="subtitle is-6">This Week</h6>
                                 <div class="content">
-                                <canvas id="week-chart" height="150px"></canvas>
+                                <canvas id="week-chart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -84,7 +84,7 @@
                             <div class="tile is-child box">
                                 <h6 class="subtitle is-6">This Month</h6>
                                 <div class="content">
-                                <canvas id="month-chart" height="150px"></canvas>
+                                <canvas id="month-chart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -98,7 +98,7 @@
                             <div class="tile is-child box">
                                 <h6 class="subtitle is-6">Live data</h6>
                                 <div class="content">
-                                    <canvas id="live-chart" height="50px"></canvas>
+                                    <canvas id="live-chart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -116,6 +116,7 @@
         y: 0
     }]; 
     var liveChart;
+    var lastQuery;
     function staticChart(context, element) {
        $.ajax({
            method: 'get',
@@ -156,21 +157,22 @@
     }
 
     function initLiveChart() {
-       $.ajax({
-           method: 'get',
-           url: 'data',
-           data: {
-               rainbot: 1,
-               aggregate: true,
-               since: (new Date().getTime() / 1000) - 3600
-           },
-           success: data=>{
-               for(let i=0; i<data.time.length; i++) {
-                   liveData.push({
-                       t: new Date(data.time[i] * 1000),
-                       y: data.rain[i]
-                   });
-               }
+        lastQuery = new Date().getTime() - 3600000;
+        $.ajax({
+            method: 'get',
+            url: 'data',
+            data: {
+                rainbot: 1,
+                aggregate: true,
+                since: lastQuery / 1000
+            },
+            success: data=>{
+                for(let i=0; i<data.time.length; i++) {
+                    liveData.push({
+                        t: new Date(data.time[i] * 1000),
+                        y: data.rain[i]
+                    });
+                }
 
                 liveChart = new Chart('live-chart', {
                     type: 'bar',
@@ -204,25 +206,17 @@
             }
         });
 
-        //updateChart();
         setInterval(updateChart, 5000);
     }
 
     function updateChart() {
         console.log('Updating');
-        let now = new Date();
-
-        while(liveData.length > 0 && liveData[0].y == 0) {
-            liveData.pop(0);
-        }
+        let now = new Date().getTime();
 
         liveData.splice(0, 1, {t: new Date(now - 3600000), y: 0});
+        liveData.pop();
 
-        while(liveData.length > 0 && liveData[liveData.length-1] == 0) {
-            liveData.pop(liveData.length-1);
-        }
-
-        let since = (liveData[liveData.length - 1].t.getTime() + 1) / 1000
+        let since = lastQuery;
 
         $.ajax({
             method: 'get',
@@ -230,22 +224,29 @@
             data: {
                 rainbot: 1,
                 aggregate: true,
-                since: since
+                since: since / 1000
             },
             success: data=>{
+                lastQuery = since + 1;
+                if(Math.max(...data.rain) > 0) {
+                    pulseIcon();
+                }
                 for(let i=0; i<data.time.length; i++) {
                     liveData.push({
                         t: new Date(data.time[i] * 1000),
                         y: data.rain[i]
                     });
                 }
-                if(liveData[liveData.length-1].t < now) {
-                    liveData.push({t:now, y:0});
-                }
+                liveData.push({t:new Date(), y:0});
                 liveChart.update();
             },
             error: e=>console.log(e)
         });
+    }
+
+    function pulseIcon() {
+        $("#logo").attr("color", "red");
+        setTimeout(()=>$("#logo").attr("color", null), 1000);
     }
 
     function updateCounts() {
