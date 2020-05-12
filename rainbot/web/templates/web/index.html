@@ -229,10 +229,15 @@
                     pulseIcon();
                 }
                 for(let i=0; i<data.time.length; i++) {
-                    liveData.push({
-                        t: new Date(data.time[i] * 1000),
-                        y: data.rain[i]
-                    });
+                    let t = data.time[i] * 1000;
+                    if(t > liveData[liveData.length - 1].t) {
+                        liveData.push({
+                            t: t,
+                            y: data.rain[i]
+                        });
+                    } else if (t == liveData[liveData.length - 1].t) {
+                        liveData[liveData.length - 1].y += data.rain[i];
+                    }
                 }
                 liveData.push({t:new Date(), y:0});
                 liveChart.update();
