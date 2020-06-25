@@ -13,6 +13,44 @@ from .utils import (raindrop_counts, day_start, week_start, month_start,
 
 import pandas as pd
 
+
+def impulse2height(impulse):
+    """
+    Convert an 'impulse' from rainbot to the amount of rain in mm.
+
+    From AW:
+    If the number you get is [rain] then:
+    Drop Diameter = 0.705*[rain]^0.276 (from a single point cal based on 3.2mm
+    droplets hitting the centre of the sensor with a presumed momentum based
+    on their terminal velocity, a bit of an assumption, but still...)
+
+    Drop volume, assuming spherical, is =4*(Drop Diameter/2)^3*pi/3 (from
+    geometry lessons)
+
+    Rainfall is usually given as a linear height in mm, so this drop
+    conceptually spreads out on the sensor into a layer of
+    Height = Drop Volume/(pi()*15^2)
+
+    This last bit is a bit of a fudge factor. I made an assessment of the
+    effective sensor radius by dropping the same size drops at different
+    distances away from the centre of the sensor. You might think that 12mm
+    looks like a better number to use. But if you do that then the measured
+    rain height (and cumulative amount) will get bigger, and it’s already too
+    big by about 10% vs the rain jar...
+
+    Args:
+        impulse - the raindrop signal recorded by rainbot
+
+    Returns:
+        height - impulse converted to the equivilent height (depth?) of water,
+                 in mm.
+    """
+    diameter = 0.705 * impulse ** 0.276
+    volume = (4. / 3.) * math.pi * (diameter / 2) ** 3
+    height = volume / (math.pi * 15 ** 2)
+    return height
+
+
 # Create your views here.
 class HomeView(View):
     def get(self, request):
@@ -67,7 +105,8 @@ class GetDataView(View):
 class PostDataView(View):
 
     def _rain(self, r, t, d):
-        RainDrop(rainbot=r, time=t, data=d).save()
+        height = impulse2height(d)
+        RainDrop(rainbot=r, time=t, data=height).save()
 
     def _wifi(self, r, t, d):
         r.wifi = d
