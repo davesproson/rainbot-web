@@ -74,8 +74,9 @@ class HomeView(View):
 
 class CountsView(View):
     def get(self, request):
+        bot = get_object_or_404(RainBot, pk=request.GET.get('rainbot'))
         return JsonResponse({
-            'counts': raindrop_counts(1)
+            'counts': raindrop_counts(bot.pk)
         })
 
 

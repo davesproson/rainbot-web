@@ -215,7 +215,7 @@
             method: 'get',
             url: 'data',
             data: {
-                rainbot: 1,
+                rainbot: $("#rainbot-pk").val(),
                 aggregate: true,
                 since: since / 1000
             },
@@ -254,6 +254,9 @@
         $.ajax({
             method: 'get',
             url: 'counts',
+            data: {
+                rainbot: $("#rainbot-pk").val()
+            },
             success: data=>{
                 $("#counts-today").html(data.counts.today);
                 $("#counts-thisweek").html(data.counts.this_week);
