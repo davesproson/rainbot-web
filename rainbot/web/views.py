@@ -54,14 +54,20 @@ def impulse2height(impulse):
 # Create your views here.
 class HomeView(View):
     def get(self, request):
-        rainbot = RainBot.objects.get(name__iexact='zippy')
+        botname = request.GET.get('name', 'zippy')
+        try:
+            rainbot = RainBot.objects.get(name__iexact=botname)
+        except Exception:
+            return HttpResponse('Who\'s {bot}?'.format(bot=botname))
+
         return render(
             request, 'web/index.html',
             {
                 'counts': raindrop_counts(rainbot.pk),
                 'name': rainbot.name,
                 'battery': rainbot.battery,
-                'wifi': rainbot.wifi
+                'wifi': rainbot.wifi,
+                'pk': rainbot.pk
             }
         )
 

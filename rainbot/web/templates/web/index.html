@@ -11,6 +11,7 @@
         <script src="https://code.jquery.com/jquery-3.5.0.min.js"></script>
     </head>
     <body>
+        <input id="rainbot-pk" type="hidden" value="{{pk}}" />
         <section class="section">
             <div class="container">
                 <h1 class="title">
@@ -133,7 +134,7 @@
            method: 'get',
            url: 'staticdata',
            data: {
-               rainbot: 1,
+               rainbot: $("#rainbot-pk").val(),
                context: context
            },
            success: data=>{
